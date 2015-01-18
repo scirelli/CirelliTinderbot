@@ -2,9 +2,11 @@ var Q       = require('q');
 var fs      = require('fs');
 var tinder  = require('./tinder.js');
 var request = require('request');
+var sc      = require('./IChangeRegistrar.js');
 require('./extras-math.js');
 
 function CirelliTinderBot(){
+"use strict";
     var NO_RESULTS_DELAY      = 15*60*1000;//15mins
     var RECOMMENDATIONS_LIMIT = 15;
 
@@ -14,6 +16,7 @@ function CirelliTinderBot(){
     var userId           = '';          //Get it here http://findmyfacebookid.com/
     var cookie           = '';          //FB cookie: Open your favorite browser and JS debugger and do a window.document.cookie
     var fbTokenExpiresIn = new Date(new Date().getTime() - 60 * 20 * 1000);//some time in the past;
+    var me               = this;
 
     function run(){
         if( !userId && !cookie ){
@@ -28,8 +31,8 @@ function CirelliTinderBot(){
                 if( data && data.results && data.results.length ){
                     likeAllRecs( data.results, 0, data.results.length );
                 }else{
-                    console.log('No one left to like! Waiting ' + (NO_RESULTS_DELAY/1000/60) + 'mins');
-                    console.log(data);
+                    me.log('No one left to like! Waiting ' + (NO_RESULTS_DELAY/1000/60) + 'mins');
+                    me.log(JSON.stringify(data));
                     Q.delay(NO_RESULTS_DELAY).then(function(){
                         run();
                     }).done();;
@@ -45,7 +48,7 @@ function CirelliTinderBot(){
                 defered.reject({error:'Done', a:a, index:index, sz:sz});
             }else{
                 var e       = a[index];
-                console.log('******** ' + totalCnt++ + ' **********\n' + e.name + '\n\t' + e._id + '\n\t' + e.distance_mi + ' miles away.\n********************\n\n\n');
+                me.log('******** ' + totalCnt++ + ' **********\n' + e.name + '\n\t' + e._id + '\n\t' + e.distance_mi + ' miles away.\n********************\n\n\n');
             
                 tin.like(e._id,function(error, data){
                     if( error ){
@@ -132,20 +135,33 @@ function CirelliTinderBot(){
         }
         return false;
     }
-
+    
+    this.logError = function( str ){
+        console.log(str);
+    }
+    this.log = function( str ){
+        console.log(str);
+    }
+    this.changePub  = new CirelliTinderBot.ChangePublisher();
+    this.register   = changePub.register;
+    this.unregister = changePub.unregister;
     Object.defineProperty(this, "LIKE_DELAY", { get: function(){ return ~~Math.rndRange(800,1500); } });
     this.setUserId = function(usrId){
         userId = usrId;
     }
-    this.setFBCookie = function(fbcookie){
-        cookie = fbcookie;
+    this.setFBCookie = function(fbCookie){
+        cookie = fbCookie;
     }
     this.start = function( usrId, fbCookie ){
         this.setUserId( usrId || CirelliTinderBot.getUserIdFromFile() );
-        this.setFBCookie( fbcookie || CirelliTinderBot.getFBCookieFromFile());
+        this.setFBCookie( fbCookie || CirelliTinderBot.getFBCookieFromFile());
         run();
     }
 }
+CirelliTinderBot.ChangePublisher = function(){
+    sc.AChangePublisherWithDNN.call(this);
+};
+CirelliTinderBot.ChangePublisher.prototype = new sc.AChangePublisherWithDNN();
 
 CirelliTinderBot.getUserIdFromFile = function(fileName){
     fileName = fileName || 'userid.txt';
@@ -162,4 +178,7 @@ CirelliTinderBot.getFBCookieFromFile = function(fileName){
     }catch(e){}
     return '';
 }
-    
+CirelliTinderBot.Listener = function(){};
+CirelliTinderBot.Listener.prototype = new sc.IChangeListener();
+
+module.exports = CirelliTinderBot;
