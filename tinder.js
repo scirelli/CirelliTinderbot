@@ -1,3 +1,7 @@
+//**********************************************************
+// Modified version of https://github.com/alkawryk/tinderjs 
+// Probably should fork it...oh well.
+//**********************************************************
 var TINDER_HOST = "https://api.gotinder.com";
 var request = require('request');
 
@@ -259,4 +263,4 @@ function TinderClient() {
   
 }
 
-exports.TinderClient = TinderClient;
+module.exports.TinderClient = TinderClient;
