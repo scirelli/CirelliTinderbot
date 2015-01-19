@@ -62,7 +62,7 @@ function CirelliTinderBot(){
                 });
             }
             return defered.promise;
-        }( aRecs, index, sz ).delay(this.LIKE_DELAY).then(
+        }( aRecs, index, sz ).delay(me.LIKE_DELAY).then(
             function resolve0(result){
                 return likeAllRecs( result.a, result.index+1, result.sz );
             },
@@ -144,8 +144,8 @@ function CirelliTinderBot(){
         console.log(str);
     }
     this.changePub  = new CirelliTinderBot.ChangePublisher();
-    this.register   = changePub.register;
-    this.unregister = changePub.unregister;
+    this.register   = function(obj){this.changePub.register(obj)};
+    this.unregister = function(obj){this.changePub.unregister(obj)};
     Object.defineProperty(this, "LIKE_DELAY", { get: function(){ return ~~Math.rndRange(800,1500); } });
     this.setUserId = function(usrId){
         userId = usrId;
@@ -159,11 +159,28 @@ function CirelliTinderBot(){
         run();
     }
 }
+
+CirelliTinderBot.getUserIdFromFile = function(fileName){
+    fileName = fileName || 'userid.txt';
+    try{
+        return fs.readFileSync('userid.txt', 'utf-8');//Get userid from http://findmyfacebookid.com/
+    }catch(e){}
+    return '';
+}
+
+CirelliTinderBot.getFBCookieFromFile = function(fileName){
+    fileName = fileName || 'cookie.txt';
+    try{
+        return fs.readFileSync(fileName, 'utf-8');
+    }catch(e){}
+    return '';
+}
+
 CirelliTinderBot.ChangePublisher = function(){
     sc.AChangePublisherWithDNN.call(this);
 };
 CirelliTinderBot.ChangePublisher.prototype = new sc.AChangePublisherWithDNN();
-CirelliTinderBot.ChangePublisher.prototype.liked = function( obj ){
+CirelliTinderBot.ChangePublisher.prototype.liked = function( obj, oDoNotNotifyThisListener ){
         var defferred = Q.defer();
 
         function _change( aListeners, index, length, obj, oDoNotNotifyThisListener ){
@@ -191,22 +208,12 @@ CirelliTinderBot.ChangePublisher.prototype.liked = function( obj ){
 
         return defferred.promise;
 }
-
-CirelliTinderBot.getUserIdFromFile = function(fileName){
-    fileName = fileName || 'userid.txt';
-    try{
-        return fs.readFileSync('userid.txt', 'utf-8');//Get userid from http://findmyfacebookid.com/
-    }catch(e){}
-    return '';
+CirelliTinderBot.ChangePublisher.prototype.register = function(obj){
+    if( obj.onLiked ){
+        sc.AChangePublisher.prototype.register.call(this, obj);
+    }
 }
 
-CirelliTinderBot.getFBCookieFromFile = function(fileName){
-    fileName = fileName || 'cookie.txt';
-    try{
-        return fs.readFileSync(fileName, 'utf-8');
-    }catch(e){}
-    return '';
-}
 CirelliTinderBot.Listener = function(){};
 CirelliTinderBot.Listener.prototype = new sc.IChangeListener();
 CirelliTinderBot.Listener.prototype.onLiked = function(){}
