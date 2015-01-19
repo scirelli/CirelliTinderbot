@@ -42,6 +42,7 @@ function CirelliTinderBot(){
     }
     
     function likeAllRecs( aRecs, index, sz ){
+        me.changePub.change({totalCnt:totalCnt, match:aRecs});
         void function loop( a, index, sz ){
             var defered = Q.defer();
             if( index >= sz ){
@@ -49,13 +50,13 @@ function CirelliTinderBot(){
             }else{
                 var e       = a[index];
                 me.log('******** ' + totalCnt++ + ' **********\n' + e.name + '\n\t' + e._id + '\n\t' + e.distance_mi + ' miles away.\n********************\n\n\n');
-            
                 tin.like(e._id,function(error, data){
                     if( error ){
                         debugger;
                         defered.reject({error:error, data:data, a:a, index:index, sz:sz});
                     }else{
                         likesRemaining = data.likes_remaining;
+                        me.changePub.liked({match:e,data:data});
                         defered.resolve({error:error, data:data, a:a, index:index, sz:sz});
                     }
                 });
@@ -162,6 +163,34 @@ CirelliTinderBot.ChangePublisher = function(){
     sc.AChangePublisherWithDNN.call(this);
 };
 CirelliTinderBot.ChangePublisher.prototype = new sc.AChangePublisherWithDNN();
+CirelliTinderBot.ChangePublisher.prototype.liked = function( obj ){
+        var defferred = Q.defer();
+
+        function _change( aListeners, index, length, obj, oDoNotNotifyThisListener ){
+            for( var i=0, itm=null; index<length && i<10; index++, i++ ){
+                itm = aListeners[index];
+                if( itm !== oDoNotNotifyThisListener ){
+                    try{
+                        itm.onLiked( obj );
+                    }catch(e){
+                        console.error(e);
+                    }
+                }
+            }
+            if( index < length ){
+                setTimeout(function(){
+                    defferred.notify( index/length );
+                    _change( aListeners, index, length, obj, oDoNotNotifyThisListener );
+                }, 1);
+            }else{
+                defferred.resolve(true);
+            }
+        };
+
+        _change( this.aListeners, 0, this.aListeners.length, obj, oDoNotNotifyThisListener );
+
+        return defferred.promise;
+}
 
 CirelliTinderBot.getUserIdFromFile = function(fileName){
     fileName = fileName || 'userid.txt';
@@ -180,5 +209,6 @@ CirelliTinderBot.getFBCookieFromFile = function(fileName){
 }
 CirelliTinderBot.Listener = function(){};
 CirelliTinderBot.Listener.prototype = new sc.IChangeListener();
+CirelliTinderBot.Listener.prototype.onLiked = function(){}
 
 module.exports = CirelliTinderBot;
