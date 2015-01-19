@@ -26,37 +26,40 @@ function CirelliTinderBot(){
             authorize().then(run,function(reason){
                 throw 'Could not authorize: ' + reason.error;
             }).done();
-        }else{
+        }else{//run tasks
             tin.getRecommendations(RECOMMENDATIONS_LIMIT,function handleResults(error, data){
                 if( data && data.results && data.results.length ){
+                    me.changePub.change({totalCnt:totalCnt+data.results.length, data:data.results});
                     likeAllRecs( data.results, 0, data.results.length );
                 }else{
-                    me.log('No one left to like! Waiting ' + (NO_RESULTS_DELAY/1000/60) + 'mins');
-                    me.log(JSON.stringify(data));
+                    //me.log('No one left to like! Waiting ' + (NO_RESULTS_DELAY/1000/60) + 'mins');
+                    //me.log(JSON.stringify(data));
+                    me.changePub.idle({data:data, idleTime:NO_RESULTS_DELAY});
                     Q.delay(NO_RESULTS_DELAY).then(function(){
+                        me.changePub.resume();
                         run();
-                    }).done();;
+                    }).done();
                 }
             });
         }
     }
     
     function likeAllRecs( aRecs, index, sz ){
-        me.changePub.change({totalCnt:totalCnt, match:aRecs});
         void function loop( a, index, sz ){
             var defered = Q.defer();
             if( index >= sz ){
                 defered.reject({error:'Done', a:a, index:index, sz:sz});
             }else{
                 var e       = a[index];
-                me.log('******** ' + totalCnt++ + ' **********\n' + e.name + '\n\t' + e._id + '\n\t' + e.distance_mi + ' miles away.\n********************\n\n\n');
+                totalCnt++;
+                //me.log('******** ' + totalCnt + ' **********\n' + e.name + '\n\t' + e._id + '\n\t' + e.distance_mi + ' miles away.\n********************\n\n\n');
                 tin.like(e._id,function(error, data){
                     if( error ){
                         debugger;
                         defered.reject({error:error, data:data, a:a, index:index, sz:sz});
                     }else{
                         likesRemaining = data.likes_remaining;
-                        me.changePub.liked({match:e,data:data});
+                        me.changePub.liked({totalCnt:totalCnt, match:e,data:data});
                         defered.resolve({error:error, data:data, a:a, index:index, sz:sz});
                     }
                 });
@@ -143,6 +146,7 @@ function CirelliTinderBot(){
     this.log = function( str ){
         console.log(str);
     }
+
     this.changePub  = new CirelliTinderBot.ChangePublisher();
     this.register   = function(obj){this.changePub.register(obj)};
     this.unregister = function(obj){this.changePub.unregister(obj)};
@@ -181,41 +185,25 @@ CirelliTinderBot.ChangePublisher = function(){
 };
 CirelliTinderBot.ChangePublisher.prototype = new sc.AChangePublisherWithDNN();
 CirelliTinderBot.ChangePublisher.prototype.liked = function( obj, oDoNotNotifyThisListener ){
-        var defferred = Q.defer();
-
-        function _change( aListeners, index, length, obj, oDoNotNotifyThisListener ){
-            for( var i=0, itm=null; index<length && i<10; index++, i++ ){
-                itm = aListeners[index];
-                if( itm !== oDoNotNotifyThisListener ){
-                    try{
-                        itm.onLiked( obj );
-                    }catch(e){
-                        console.error(e);
-                    }
-                }
-            }
-            if( index < length ){
-                setTimeout(function(){
-                    defferred.notify( index/length );
-                    _change( aListeners, index, length, obj, oDoNotNotifyThisListener );
-                }, 1);
-            }else{
-                defferred.resolve(true);
-            }
-        };
-
-        _change( this.aListeners, 0, this.aListeners.length, obj, oDoNotNotifyThisListener );
-
-        return defferred.promise;
+    return this._achange('onLiked', obj, oDoNotNotifyThisListener);;
+}
+CirelliTinderBot.ChangePublisher.prototype.idle = function( obj, oDoNotNotifyThisListener ){
+    return this._achange('onIdle', obj, oDoNotNotifyThisListener);;
+}
+CirelliTinderBot.ChangePublisher.prototype.resume = function( obj, oDoNotNotifyThisListener ){
+    return this._achange('onResume', obj, oDoNotNotifyThisListener);;
 }
 CirelliTinderBot.ChangePublisher.prototype.register = function(obj){
-    if( obj.onLiked ){
-        sc.AChangePublisher.prototype.register.call(this, obj);
+    if( obj.onLiked && obj.onIdle && obj.onResume ){
+        return sc.AChangePublisher.prototype.register.call(this, obj);
     }
+    return false;
 }
 
-CirelliTinderBot.Listener = function(){};
-CirelliTinderBot.Listener.prototype = new sc.IChangeListener();
-CirelliTinderBot.Listener.prototype.onLiked = function(){}
+CirelliTinderBot.Listener                    = function(){};
+CirelliTinderBot.Listener.prototype          = new sc.IChangeListener();
+CirelliTinderBot.Listener.prototype.onLiked  = function(){}
+CirelliTinderBot.Listener.prototype.onIdle   = function(){}
+CirelliTinderBot.Listener.prototype.onResume = function(){}
 
 module.exports = CirelliTinderBot;

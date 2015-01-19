@@ -38,16 +38,19 @@ if( sc === undefined ) var sc = new Object();
     },
 
     sc.AChangePublisher.prototype.register = function( oListener ){
-        if( oListener instanceof sc.IChangeListener ){
+        if( oListener && oListener.onChange ){
             this.unregister(oListener);//Items can not be registered more than once
             this.aListeners.push( oListener );
+            return true;
         }else if( oListener instanceof Array ){
             for( var i=0, l=oListener.length; i<l; i++ ){
                 this.register( oListener[i] );
             }
+            return true;
         }else{
             throw 'sc.AChangePublisher could not register ' + oListener;
         }
+        return false;
     },
 
     sc.AChangePublisher.prototype.unregister = function( oListener ){
@@ -74,7 +77,7 @@ if( sc === undefined ) var sc = new Object();
         sc.AChangePublisher.call(this)
     };
     sc.AChangePublisherWithDNN.prototype = new sc.AChangePublisher();
-    sc.AChangePublisherWithDNN.prototype.change = function( obj, oDoNotNotifyThisListener ){
+    sc.AChangePublisherWithDNN.prototype._achange = function( sFncName, obj, oDoNotNotifyThisListener ){
         var defferred = Q.defer();
 
         function _change( aListeners, index, length, obj, oDoNotNotifyThisListener ){
@@ -82,7 +85,7 @@ if( sc === undefined ) var sc = new Object();
                 itm = aListeners[index];
                 if( itm !== oDoNotNotifyThisListener ){
                     try{
-                        itm.onChange( obj );
+                        itm[sFncName]( obj );
                     }catch(e){
                         console.error(e);
                     }
@@ -101,6 +104,9 @@ if( sc === undefined ) var sc = new Object();
         _change( this.aListeners, 0, this.aListeners.length, obj, oDoNotNotifyThisListener );
 
         return defferred.promise;
+    }
+    sc.AChangePublisherWithDNN.prototype.change = function( obj, oDoNotNotifyThisListener ){
+        return this._achange('onChange', obj, oDoNotNotifyThisListener);
     }
 
 }(sc);
