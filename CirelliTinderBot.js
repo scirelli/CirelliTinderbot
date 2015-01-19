@@ -3,20 +3,20 @@ var fs      = require('fs');
 var tinder  = require('./tinder.js');
 var request = require('request');
 var sc      = require('./IChangeRegistrar.js');
+var task    = require('./botTask.js');
 require('./extras-math.js');
 
 function CirelliTinderBot(){
 "use strict";
     var NO_RESULTS_DELAY      = 15*60*1000;//15mins
-    var RECOMMENDATIONS_LIMIT = 15;
 
     var tin              = new tinder.TinderClient();
-    var totalCnt         = 0;
-    var likesRemaining   = 100;
     var userId           = '';          //Get it here http://findmyfacebookid.com/
     var cookie           = '';          //FB cookie: Open your favorite browser and JS debugger and do a window.document.cookie
     var fbTokenExpiresIn = new Date(new Date().getTime() - 60 * 20 * 1000);//some time in the past;
     var me               = this;
+    var aTasks           = [];
+    var bRun             = true;
 
     function run(){
         if( !userId && !cookie ){
@@ -26,55 +26,20 @@ function CirelliTinderBot(){
             authorize().then(run,function(reason){
                 throw 'Could not authorize: ' + reason.error;
             }).done();
-        }else{//run tasks
-            tin.getRecommendations(RECOMMENDATIONS_LIMIT,function handleResults(error, data){
-                if( data && data.results && data.results.length ){
-                    me.changePub.change({totalCnt:totalCnt+data.results.length, data:data.results});
-                    likeAllRecs( data.results, 0, data.results.length );
-                }else{
-                    //me.log('No one left to like! Waiting ' + (NO_RESULTS_DELAY/1000/60) + 'mins');
-                    //me.log(JSON.stringify(data));
-                    me.changePub.idle({data:data, idleTime:NO_RESULTS_DELAY});
-                    Q.delay(NO_RESULTS_DELAY).then(function(){
-                        me.changePub.resume();
-                        run();
-                    }).done();
+        }else{//run tasks. Should make it so they run and look on their own, not all settled.
+            var aDefereds = [];
+            for( var i=0,a=this.aTasks,l=a.length,itm=null; i<l; i++ ){
+                itm = a[i];
+                aDefereds.push( itm.run(tin) );
+            }
+            Q.allSettled(aDefereds).then(function(aResults){
+                if( bRun ){
+                    run();
                 }
-            });
+            }).done();
         }
     }
     
-    function likeAllRecs( aRecs, index, sz ){
-        void function loop( a, index, sz ){
-            var defered = Q.defer();
-            if( index >= sz ){
-                defered.reject({error:'Done', a:a, index:index, sz:sz});
-            }else{
-                var e       = a[index];
-                totalCnt++;
-                //me.log('******** ' + totalCnt + ' **********\n' + e.name + '\n\t' + e._id + '\n\t' + e.distance_mi + ' miles away.\n********************\n\n\n');
-                tin.like(e._id,function(error, data){
-                    if( error ){
-                        debugger;
-                        defered.reject({error:error, data:data, a:a, index:index, sz:sz});
-                    }else{
-                        likesRemaining = data.likes_remaining;
-                        me.changePub.liked({totalCnt:totalCnt, match:e,data:data});
-                        defered.resolve({error:error, data:data, a:a, index:index, sz:sz});
-                    }
-                });
-            }
-            return defered.promise;
-        }( aRecs, index, sz ).delay(me.LIKE_DELAY).then(
-            function resolve0(result){
-                return likeAllRecs( result.a, result.index+1, result.sz );
-            },
-            function reject0(){
-                run();
-            }
-        ).done();
-    }
-
     function authorize(){
         var defered = Q.defer();
         getFBAccessToken().then(function(fbToken){
@@ -142,26 +107,40 @@ function CirelliTinderBot(){
     
     this.logError = function( str ){
         console.log(str);
+        return this;
     }
     this.log = function( str ){
         console.log(str);
+        return this;
     }
-
+    this.addTask = function( oTask ){
+        if( oTask && oTask.run ){
+            this.aTasks.push(oTask);
+        }
+        return this;
+    };
+    this.removeTask = function( oTask ){
+        var i = this.aTasks.indexOf(oTask);
+        if( i >= 0 ){
+            this.aTasks.splice(i,1);
+        }
+        return this;
+    }
     this.changePub  = new CirelliTinderBot.ChangePublisher();
-    this.register   = function(obj){this.changePub.register(obj)};
-    this.unregister = function(obj){this.changePub.unregister(obj)};
-    Object.defineProperty(this, "LIKE_DELAY", { get: function(){ return ~~Math.rndRange(800,1500); } });
     this.setUserId = function(usrId){
         userId = usrId;
-    }
+        return this;
+    };
     this.setFBCookie = function(fbCookie){
         cookie = fbCookie;
-    }
+        return this;
+    };
     this.start = function( usrId, fbCookie ){
         this.setUserId( usrId || CirelliTinderBot.getUserIdFromFile() );
         this.setFBCookie( fbCookie || CirelliTinderBot.getFBCookieFromFile());
         run();
-    }
+        return this;
+    };
 }
 
 CirelliTinderBot.getUserIdFromFile = function(fileName){
@@ -184,9 +163,6 @@ CirelliTinderBot.ChangePublisher = function(){
     sc.AChangePublisherWithDNN.call(this);
 };
 CirelliTinderBot.ChangePublisher.prototype = new sc.AChangePublisherWithDNN();
-CirelliTinderBot.ChangePublisher.prototype.liked = function( obj, oDoNotNotifyThisListener ){
-    return this._achange('onLiked', obj, oDoNotNotifyThisListener);;
-}
 CirelliTinderBot.ChangePublisher.prototype.idle = function( obj, oDoNotNotifyThisListener ){
     return this._achange('onIdle', obj, oDoNotNotifyThisListener);;
 }
@@ -194,7 +170,7 @@ CirelliTinderBot.ChangePublisher.prototype.resume = function( obj, oDoNotNotifyT
     return this._achange('onResume', obj, oDoNotNotifyThisListener);;
 }
 CirelliTinderBot.ChangePublisher.prototype.register = function(obj){
-    if( obj.onLiked && obj.onIdle && obj.onResume ){
+    if( obj.onIdle && obj.onResume ){
         return sc.AChangePublisher.prototype.register.call(this, obj);
     }
     return false;
@@ -202,7 +178,6 @@ CirelliTinderBot.ChangePublisher.prototype.register = function(obj){
 
 CirelliTinderBot.Listener                    = function(){};
 CirelliTinderBot.Listener.prototype          = new sc.IChangeListener();
-CirelliTinderBot.Listener.prototype.onLiked  = function(){}
 CirelliTinderBot.Listener.prototype.onIdle   = function(){}
 CirelliTinderBot.Listener.prototype.onResume = function(){}
 
