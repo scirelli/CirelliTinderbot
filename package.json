@@ -1,0 +1,17 @@
+{
+    "name": "CirelliTinderBot",
+    "version": "0.5.0",
+    "description": "My attempt at making a Tinder Bot",
+    "main": "app.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "repository": "git://github.com/scirelli/CirelliTinderbot",
+    "author": "scirelli",
+    "license": "MIT",
+    "dependencies": {
+        "request" : "2.51.x",
+        "q":"1.x.x",
+        "express":"2.3.x"
+    }
+}
