@@ -181,9 +181,9 @@ function CirelliTinderBot(){
         changePub.unregister(obj);
         return this;
     };
-    this.start = function( usrId, fbCookie ){
-        this.setUserId( usrId || CirelliTinderBot.getUserIdFromFile() );
+    this.start = function( fbCookie, usrId ){
         this.setFBCookie( fbCookie || CirelliTinderBot.getFBCookieFromFile());
+        this.setUserId( usrId || CirelliTinderBot.getUserIdFromCookie(cookie) );
         run();
         return this;
     };
@@ -196,7 +196,14 @@ CirelliTinderBot.getUserIdFromFile = function(fileName){
     }catch(e){}
     return '';
 }
-
+CirelliTinderBot.getUserIdFromCookie = function( sCookie ){
+    var regexUserId = /c_user=(\d+);/; //c_user=587466835;
+    var a           = regexUserId.exec(sCookie);
+    if( a && a.length > 1 ){
+        return a[1];
+    }
+    return '';
+}
 CirelliTinderBot.getFBCookieFromFile = function(fileName){
     fileName = fileName || 'cookie.txt';
     try{
