@@ -1,6 +1,7 @@
 headers.txt
 tinder.txt
 authHeaders.txt
+*.vim
 /node_modules
 userid.txt
 cookie.txt
