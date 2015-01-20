@@ -1,15 +1,16 @@
+var Q  = require('q');
 var sc = require('./IChangeRegistrar.js');
 require('./extras-math.js');
 
 var botTask = {};
 
-void function( botTask ){};
+void function( botTask ){
     /**************************************
      * Task Interface for all Tasks
     ***************************************/
     botTask.ITask = function(){};
     botTask.ITask.prototype = {
-        run:function(){};
+        run:function(){}
     };
    /***************************************/
 
@@ -25,11 +26,9 @@ void function( botTask ){};
             this.setTinder(oTinder);
         }
 
-        this.changePub  = new LikeTask.ChangePublisher();
+        this.changePub  = new botTask.LikeTask.ChangePublisher();
         this.totalCnt   = 0;
         this.likesRemaining = 0;
-        this.register   = function(obj){this.changePub.register(obj)};
-        this.unregister = function(obj){this.changePub.unregister(obj)};
         Object.defineProperty(this, "LIKE_DELAY", { get: function(){ return ~~Math.rndRange(800,1500); } });
     }
     botTask.LikeTask.prototype = new botTask.ITask();
@@ -46,10 +45,11 @@ void function( botTask ){};
         this.setTinder(oTinder);
         this.oTinder.getRecommendations(this.RECOMMENDATIONS_LIMIT,function handleResults(error, data){
             if( data && data.results && data.results.length ){
-                me.changePub.change({totalCnt:totalCnt+data.results.length, data:data.results});
+                me.changePub.liked({totalCnt:me.totalCnt+data.results.length, data:data.results});
                 me.likeAllRecs( data.results, 0, data.results.length, defered );
             }else{
-                defered.resolve(true);
+                me.changePub.change({totalCnt:me.totalCnt, data:[], error:data});
+                defered.reject({ data:data, task:me });
             }
         });
         return defered.promise;
@@ -81,7 +81,7 @@ void function( botTask ){};
                 return me.likeAllRecs( result.a, result.index+1, result.sz, parentDefered );
             },
             function reject0(){
-                parentDefered.resolve(true);
+                parentDefered.resolve({task:me});
             }
         ).done();
     }
@@ -93,30 +93,40 @@ void function( botTask ){};
         this.changePub.unregister(oListener);
         return this;
     }
+    botTask.LikeTask.prototype.liked = function(obj){
+        this.changePub.liked(oListener);
+        return this;
+    }
+    botTask.LikeTask.prototype.idle = function(obj){
+        this.changePub.idle(obj);
+        return this;
+    }
 
-    LikeTask.ChangePublisher = function(){
+    botTask.LikeTask.ChangePublisher = function(){
         sc.AChangePublisherWithDNN.call(this);
     };
-    LikeTask.ChangePublisher.prototype = new sc.AChangePublisherWithDNN();
-    LikeTask.ChangePublisher.prototype.liked = function( obj, oDoNotNotifyThisListener ){
+    botTask.LikeTask.ChangePublisher.prototype = new sc.AChangePublisherWithDNN();
+    botTask.LikeTask.ChangePublisher.prototype.liked = function( obj, oDoNotNotifyThisListener ){
         return this._achange('onLiked', obj, oDoNotNotifyThisListener);;
     }
-    LikeTask.ChangePublisher.prototype.idle = function( obj, oDoNotNotifyThisListener ){
+    botTask.LikeTask.ChangePublisher.prototype.idle = function( obj, oDoNotNotifyThisListener ){
         return this._achange('onIdle', obj, oDoNotNotifyThisListener);;
     }
-    LikeTask.ChangePublisher.prototype.resume = function( obj, oDoNotNotifyThisListener ){
+    botTask.LikeTask.ChangePublisher.prototype.resume = function( obj, oDoNotNotifyThisListener ){
         return this._achange('onResume', obj, oDoNotNotifyThisListener);;
     }
-    LikeTask.ChangePublisher.prototype.register = function(obj){
-        if( obj.onLiked ){
+    botTask.LikeTask.ChangePublisher.prototype.register = function(obj){
+        if( obj.onLiked && obj.onIdle && obj.onResume ){
             return sc.AChangePublisher.prototype.register.call(this, obj);
         }
         return false;
     }
 
-    LikeTask.Listener                    = function(){};
-    LikeTask.Listener.prototype          = new sc.IChangeListener();
-    LikeTask.Listener.prototype.onLiked  = function(){}
+    botTask.LikeTask.Listener                    = function(){};
+    botTask.LikeTask.Listener.prototype          = new sc.IChangeListener();
+    botTask.LikeTask.Listener.prototype.onLiked  = function(){}
+    botTask.LikeTask.Listener.prototype.onIdle   = function(){}
+    botTask.LikeTask.Listener.prototype.onResume = function(){}
     /************************************************************************************************************/
 }(botTask);
 

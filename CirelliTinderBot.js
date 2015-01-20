@@ -8,15 +8,16 @@ require('./extras-math.js');
 
 function CirelliTinderBot(){
 "use strict";
-    var NO_RESULTS_DELAY      = 15*60*1000;//15mins
+    var NO_RESULTS_DELAY      = 15*60*1000;                                //15mins
 
     var tin              = new tinder.TinderClient();
-    var userId           = '';          //Get it here http://findmyfacebookid.com/
-    var cookie           = '';          //FB cookie: Open your favorite browser and JS debugger and do a window.document.cookie
+    var userId           = '';                                             //Get it here http://findmyfacebookid.com/
+    var cookie           = '';                                             //FB cookie: Open your favorite browser and JS debugger and do a window.document.cookie
     var fbTokenExpiresIn = new Date(new Date().getTime() - 60 * 20 * 1000);//some time in the past;
     var me               = this;
-    var aTasks           = [];
     var bRun             = true;
+    var changePub        = new CirelliTinderBot.ChangePublisher();
+    var aTasks           = [];
 
     function run(){
         if( !userId && !cookie ){
@@ -28,15 +29,53 @@ function CirelliTinderBot(){
             }).done();
         }else{//run tasks. Should make it so they run and look on their own, not all settled.
             var aDefereds = [];
-            for( var i=0,a=this.aTasks,l=a.length,itm=null; i<l; i++ ){
+            for( var i=0,a=aTasks,l=a.length,itm=null; i<l; i++ ){
                 itm = a[i];
                 aDefereds.push( itm.run(tin) );
             }
-            Q.allSettled(aDefereds).then(function(aResults){
-                if( bRun ){
-                    run();
-                }
-            }).done();
+            if( aDefereds.length ){
+                Q.allSettled(aDefereds).then(function(aResults){
+                    if( bRun ){
+                        //Quick fix. Need to do something for each task.
+                        var allFulfilled = true;
+                        for( var i=0,l=aResults.length,itm=null; i<l; i++ ){
+                            itm = aResults[i];
+                            if( itm.state === 'rejected' ){
+                                allFulfilled = false;
+                            }
+                        }
+
+                        if( allFulfilled ){
+                            run();
+                        }else{
+                            var data = {};
+                            for( var i=0,l=aResults.length,itm=null; i<l; i++ ){
+                                itm = aResults[i];
+                                if( itm.reason ){
+                                    itm.reason.task.idle(itm.reason.data);
+                                }
+                                if( itm.value ){
+                                    itm.value.task.idle(itm.reason.data);
+                                }
+                            }
+                            changePub.idle({idleTime:NO_RESULTS_DELAY});
+                            Q.delay(NO_RESULTS_DELAY).then(function(){
+                                for( var i=0,l=aResults.length,itm=null; i<l; i++ ){
+                                    itm = aResults[i];
+                                    if( itm.reason ){
+                                        itm.reason.task.resume(itm.reason.data);
+                                    }
+                                    if( itm.value ){
+                                        itm.value.task.resume(itm.reason.data);
+                                    }
+                                }
+                                changePub.resume();
+                                run();
+                            }).done();
+                        }
+                    }
+                }).done();
+            }
         }
     }
     
@@ -115,24 +154,31 @@ function CirelliTinderBot(){
     }
     this.addTask = function( oTask ){
         if( oTask && oTask.run ){
-            this.aTasks.push(oTask);
+            aTasks.push(oTask);
         }
         return this;
     };
     this.removeTask = function( oTask ){
-        var i = this.aTasks.indexOf(oTask);
+        var i = aTasks.indexOf(oTask);
         if( i >= 0 ){
-            this.aTasks.splice(i,1);
+            aTasks.splice(i,1);
         }
         return this;
-    }
-    this.changePub  = new CirelliTinderBot.ChangePublisher();
+    };
     this.setUserId = function(usrId){
         userId = usrId;
         return this;
     };
     this.setFBCookie = function(fbCookie){
         cookie = fbCookie;
+        return this;
+    };
+    this.register = function( obj ){
+        changePub.register(obj);
+        return this;
+    };
+    this.unregister = function( obj ){
+        changePub.unregister(obj);
         return this;
     };
     this.start = function( usrId, fbCookie ){

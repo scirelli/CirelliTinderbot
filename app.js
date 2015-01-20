@@ -13,12 +13,20 @@ listen.prototype.onResume = function( obj ){
     console.log('Resuming: ' + JSON.stringify(obj));
 }
 
-var likeListner = function(){};
-likeListner.prototype = new task.Listener();
-likeListner.prototype.onLike = function(obj){
+function LikeListner(){};
+LikeListner.prototype = new task.LikeTask.Listener();
+LikeListner.prototype.onLiked = function(obj){
     console.log('******** ' + obj.totalCnt + ' **********\n' + obj.match.name + '\n\t' + obj.match._id + '\n\t' + obj.match.distance_mi + ' miles away.\n********************\n\n\n');
 };
+LikeListner.prototype.onIdle = function( obj ){
+    console.log('Going idle.' );
+    console.log(JSON.stringify(obj));
+}
+LikeListner.prototype.onResume = function( obj ){
+    console.log('Resumed');
+    console.log(JSON.stringify(obj));
+}
 
 bot.register( new listen() );
-bot.addTask( new task.LikeTask().add( likeListner ) );
+bot.addTask( new task.LikeTask().register( new LikeListner() ) );
 bot.start();
