@@ -19,6 +19,8 @@ function CirelliTinderBot(){
     var changePub        = new CirelliTinderBot.ChangePublisher();
     var aTasks           = [];
     var defAuthorize     = Q.defer();
+    var oSharedData      = { getMyTinderId:getMyTinderId };
+    var sMyTinderId      = '';
 
     function run(){
         if( !userId && !cookie ){
@@ -26,6 +28,7 @@ function CirelliTinderBot(){
         }
 
         aTasks.forEach(function(e,index){
+            e.setSharedData( oSharedData );
             runTask(e,tin);
         });
     }
@@ -39,9 +42,9 @@ function CirelliTinderBot(){
                             runTask(t,tin);
                         },
                         function taskReject( reason ){
-                            t.idle( reason );
+                            changePub.idle( {reason:reason, idleTime:NO_RESULTS_DELAY} );
                             Q.delay(NO_RESULTS_DELAY).then(function(){
-                                t.resume( reason );
+                                changePub.resume( reason );
                                 runTask(t,tin);
                             });
                         }
@@ -67,13 +70,16 @@ function CirelliTinderBot(){
                 if( response && response.error ){
                     defered.reject({authorized:false, error:response.error});
                 }else{
+                    sMyTinderId = response.userId;
                     defered.resolve({authorized:true});
                 }
             });
         });
         return defered.promise;
     }
-
+    function getMyTinderId(){
+        return sMyTinderId;
+    }
     function getFBAccessToken(){
         var defered = Q.defer();
         var opts = {
@@ -134,7 +140,7 @@ function CirelliTinderBot(){
         return this;
     }
     this.addTask = function( oTask ){
-        if( oTask && oTask.run ){
+        if( oTask && oTask.run && oTask.setSharedData ){
             aTasks.push(oTask);
         }
         return this;
@@ -198,10 +204,10 @@ CirelliTinderBot.ChangePublisher = function(){
 };
 CirelliTinderBot.ChangePublisher.prototype = new sc.AChangePublisherWithDNN();
 CirelliTinderBot.ChangePublisher.prototype.idle = function( obj, oDoNotNotifyThisListener ){
-    return this._achange('onIdle', obj, oDoNotNotifyThisListener);;
+    return this._achange('onIdle', obj, oDoNotNotifyThisListener);
 }
 CirelliTinderBot.ChangePublisher.prototype.resume = function( obj, oDoNotNotifyThisListener ){
-    return this._achange('onResume', obj, oDoNotNotifyThisListener);;
+    return this._achange('onResume', obj, oDoNotNotifyThisListener);
 }
 CirelliTinderBot.ChangePublisher.prototype.register = function(obj){
     if( obj.onIdle && obj.onResume ){

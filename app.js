@@ -1,22 +1,22 @@
 var task             = require('./botTask.js');
 var CirelliTinderBot = require('./CirelliTinderBot.js');
 
-var bot = new CirelliTinderBot();
-
-var listen = function(){};
-listen.prototype = new CirelliTinderBot.Listener();
-listen.prototype.onIdle = function( obj ){
-    console.log('Going idle for ' + (obj.idleTime/1000/60) + 'mins' );
-    console.log(JSON.stringify(obj));
-}
-listen.prototype.onResume = function( obj ){
-    console.log('Resuming: ' + JSON.stringify(obj));
-}
+var bot        = new CirelliTinderBot(),
+    likeTask   = new task.LikeTask(),
+    filterTask = new task.FilterSpamTask();
 
 function LikeListner(){};
 LikeListner.prototype = new task.LikeTask.Listener();
 LikeListner.prototype.onLiked = function(obj){
     console.log('******** ' + obj.totalCnt + ' **********\n' + obj.match.name + '\n\t' + obj.match._id + '\n\t' + obj.match.distance_mi + ' miles away.\n********************\n\n\n');
+    if( obj && obj.data && obj.data.match ){
+        console.log( 'Sending msg to: ' + obj.match._id + "\nMsg: Hi " + obj.match.name + "! How are you?");
+        obj.oTinder.sendMessage( obj.match._id, "Hi " + obj.match.name + "! How are you?", function(error, data){
+            if( !error ){
+                console.log( 'Msg sent' + JSON.stringify(data) );
+            }
+        });
+    }
 };
 LikeListner.prototype.onIdle = function( obj ){
     console.log('Going idle.' );
@@ -27,6 +27,13 @@ LikeListner.prototype.onResume = function( obj ){
     console.log(JSON.stringify(obj));
 }
 
-bot.register( new listen() );
-bot.addTask( new task.LikeTask().register( new LikeListner() ) );
+
+likeTask.register( new LikeListner() );
+filterTask.register( new LikeListner() );
+
+//bot.register( likeTask );
+bot.register( filterTask );
+
+//bot.addTask( likeTask );
+bot.addTask( filterTask );
 bot.start();

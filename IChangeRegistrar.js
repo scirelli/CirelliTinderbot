@@ -54,11 +54,11 @@ if( sc === undefined ) var sc = new Object();
     },
 
     sc.AChangePublisher.prototype.unregister = function( oListener ){
-        if( oListener instanceof sc.IChangeListener ){
+        if( oListener && oListener.onChange ){
             var itm = this.aListeners.indexOf( oListener );
             if(itm < 0 ) return;
             return this.aListeners.splice( itm, 1 );
-        }else if( oListener instanceof Array() ){
+        }else if( oListener instanceof Array ){
             for( var i=0, l=oListener.length; i<l; i++ ){
                 this.unregister( oListener[i] );
             }
@@ -66,7 +66,7 @@ if( sc === undefined ) var sc = new Object();
     },
 
     sc.AChangePublisher.prototype.registered = function( oListener ){
-        if( oListener instanceof sc.IChangeListener ){
+        if( oListener && oListener.onChange ){
             var itm = this.aListeners.indexOf( oListener );
             return itm < 0 ? false : true;
         }
