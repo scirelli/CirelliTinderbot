@@ -4,6 +4,7 @@
 //**********************************************************
 var TINDER_HOST = "https://api.gotinder.com";
 var request = require('request');
+require('./date.js');
 
 /**
  * Constructs a new instance of the TinderClient class
@@ -13,7 +14,7 @@ var request = require('request');
  */
 function TinderClient() {
   var xAuthToken = null;
-  var lastActivity = new Date();
+  var lastActivity = Date.today().addDays(-1);
   var _this = this;
   
   /**
@@ -21,9 +22,6 @@ function TinderClient() {
    */
   this.userId = null;
   
-  this.setAuthToken = function( t ){
-      xAuthToken = t;
-  }
   this.getAuthToken = function(){
       return xAuthToken;
   }
@@ -251,6 +249,20 @@ function TinderClient() {
   };
   
   /**
+   * Reports a user.
+   * @param {String} id user id of the user to report
+   * @param {String} cause_id: should be 1 or 2, (1 is spam, 2 is inappropriate/offensive). Defaults to 1 (spam)
+   * @param {Function} callback the callback to invoke when the request completes
+   */
+  this.report = function(id, cause_id, callback) {
+    tinderPost('report/' + id,
+      {
+          "cause":cause_id || TinderClient.REPORT_CAUSE_SPAM
+      },
+      makeTinderCallback(callback));
+  };
+
+  /**
    * Get user by id
    * @param {String} userId the id of the user
    * @param {Function} callback the callback to invoke when the request completes
@@ -262,5 +274,8 @@ function TinderClient() {
   };
   
 }
+//Constants
+Object.defineProperty(TinderClient, "REPORT_CAUSE_SPAM",      { get: function(){ return 1; } });
+Object.defineProperty(TinderClient, "REPORT_CAUSE_OFFENSIVE", { get: function(){ return 2; } });
 
 module.exports.TinderClient = TinderClient;

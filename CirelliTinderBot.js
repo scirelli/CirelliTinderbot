@@ -18,67 +18,51 @@ function CirelliTinderBot(){
     var bRun             = true;
     var changePub        = new CirelliTinderBot.ChangePublisher();
     var aTasks           = [];
+    var defAuthorize     = Q.defer();
+    var oSharedData      = { getMyTinderId:getMyTinderId };
+    var sMyTinderId      = '';
 
     function run(){
         if( !userId && !cookie ){
             throw 'Need to set userId and cookie first.';
         }
-        if( isFBTokenExpired() ){
-            authorize().then(run,function(reason){
-                throw 'Could not authorize: ' + reason.error;
-            }).done();
-        }else{//run tasks. Should make it so they run and look on their own, not all settled.
-            var aDefereds = [];
-            for( var i=0,a=aTasks,l=a.length,itm=null; i<l; i++ ){
-                itm = a[i];
-                aDefereds.push( itm.run(tin) );
-            }
-            if( aDefereds.length ){
-                Q.allSettled(aDefereds).then(function(aResults){
-                    if( bRun ){
-                        //Quick fix. Need to do something for each task.
-                        var allFulfilled = true;
-                        for( var i=0,l=aResults.length,itm=null; i<l; i++ ){
-                            itm = aResults[i];
-                            if( itm.state === 'rejected' ){
-                                allFulfilled = false;
-                            }
-                        }
 
-                        if( allFulfilled ){
-                            run();
-                        }else{
-                            var data = {};
-                            for( var i=0,l=aResults.length,itm=null; i<l; i++ ){
-                                itm = aResults[i];
-                                if( itm.reason ){
-                                    itm.reason.task.idle(itm.reason.data);
-                                }
-                                if( itm.value ){
-                                    itm.value.task.idle(itm.reason.data);
-                                }
-                            }
-                            changePub.idle({idleTime:NO_RESULTS_DELAY});
+        aTasks.forEach(function(e,index){
+            e.setSharedData( oSharedData );
+            runTask(e,tin);
+        });
+    }
+
+    function runTask( t, tin ){
+        if( bRun ){
+            authenticate().then(
+                function authenticateResolve(){
+                    t.run(tin).then(
+                        function taskResolve(){
+                            runTask(t,tin);
+                        },
+                        function taskReject( reason ){
+                            changePub.idle( {reason:reason, idleTime:NO_RESULTS_DELAY} );
                             Q.delay(NO_RESULTS_DELAY).then(function(){
-                                for( var i=0,l=aResults.length,itm=null; i<l; i++ ){
-                                    itm = aResults[i];
-                                    if( itm.reason ){
-                                        itm.reason.task.resume(itm.reason.data);
-                                    }
-                                    if( itm.value ){
-                                        itm.value.task.resume(itm.reason.data);
-                                    }
-                                }
-                                changePub.resume();
-                                run();
-                            }).done();
+                                changePub.resume( reason );
+                                runTask(t,tin);
+                            });
                         }
-                    }
-                }).done();
-            }
+                    ).done();
+                },
+                function authenticateReject(){
+                    throw 'Unable to authenticate.';
+                }
+            );
         }
     }
-    
+
+    function authenticate(){
+        if( isFBTokenExpired() ){
+            defAuthorize = authorize();
+        }
+        return defAuthorize;
+    }
     function authorize(){
         var defered = Q.defer();
         getFBAccessToken().then(function(fbToken){
@@ -86,13 +70,18 @@ function CirelliTinderBot(){
                 if( response && response.error ){
                     defered.reject({authorized:false, error:response.error});
                 }else{
+                    sMyTinderId = response.userId;
+                    console.log( 'My tinder userid: ' + sMyTinderId );
+                    console.log(JSON.stringify(response));
                     defered.resolve({authorized:true});
                 }
             });
         });
         return defered.promise;
     }
-
+    function getMyTinderId(){
+        return sMyTinderId;
+    }
     function getFBAccessToken(){
         var defered = Q.defer();
         var opts = {
@@ -136,7 +125,7 @@ function CirelliTinderBot(){
             defered.resolve(true);
         });
     }
-
+    
     function isFBTokenExpired(){
         if( new Date().getTime() >= fbTokenExpiresIn.getTime() ){
             return true;
@@ -153,7 +142,7 @@ function CirelliTinderBot(){
         return this;
     }
     this.addTask = function( oTask ){
-        if( oTask && oTask.run ){
+        if( oTask && oTask.run && oTask.setSharedData ){
             aTasks.push(oTask);
         }
         return this;
@@ -217,10 +206,10 @@ CirelliTinderBot.ChangePublisher = function(){
 };
 CirelliTinderBot.ChangePublisher.prototype = new sc.AChangePublisherWithDNN();
 CirelliTinderBot.ChangePublisher.prototype.idle = function( obj, oDoNotNotifyThisListener ){
-    return this._achange('onIdle', obj, oDoNotNotifyThisListener);;
+    return this._achange('onIdle', obj, oDoNotNotifyThisListener);
 }
 CirelliTinderBot.ChangePublisher.prototype.resume = function( obj, oDoNotNotifyThisListener ){
-    return this._achange('onResume', obj, oDoNotNotifyThisListener);;
+    return this._achange('onResume', obj, oDoNotNotifyThisListener);
 }
 CirelliTinderBot.ChangePublisher.prototype.register = function(obj){
     if( obj.onIdle && obj.onResume ){
