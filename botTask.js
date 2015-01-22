@@ -162,6 +162,12 @@ void function( botTask ){
             }
         ).done();
     }
+    botTask.LikeTask.prototype.register = function(oListener){
+        if( oListener && oListener.onLike ){
+            botTask.ATask.register.call(this,oListener);
+        }
+        return this;
+    }
     botTask.LikeTask.prototype.onLike = function(obj){
         this.liked(obj);
         return this;
@@ -303,7 +309,7 @@ void function( botTask ){
                     break;
                 }
             }
-        }
+        });
         parentDefered.reject( {error:'Sleep.', task:me} );//reject to sleep
     }
     botTask.FilterSpamTask.isSpam = function( msg ){
@@ -324,7 +330,12 @@ void function( botTask ){
         });
         return defered.promise;
     }
-
+    botTask.FilterSpamTask.prototype.register = function(oListener){
+        if( oListener && oListener.onSpam ){
+            botTask.ATask.register.call(this,oListener);
+        }
+        return this;
+    }
     botTask.FilterSpamTask.prototype.spam = function( obj ){
         this.changePub.spam(obj);
         return this;

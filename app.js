@@ -26,6 +26,10 @@ LikeListner.prototype.onResume = function( obj ){
     console.log('Resumed');
     console.log(JSON.stringify(obj));
 }
+LikeListner.prototype.onSpam = function( obj ){
+    console.log('Spam found:');
+    console.log(JSON.stringify(obj));
+}
 
 
 likeTask.register( new LikeListner() );
