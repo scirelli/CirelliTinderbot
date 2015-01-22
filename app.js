@@ -31,13 +31,13 @@ LikeListner.prototype.onSpam = function( obj ){
     console.log(JSON.stringify(obj));
 }
 
+var l = new LikeListner();
+likeTask.register( l );
+filterTask.register( l );
 
-likeTask.register( new LikeListner() );
-filterTask.register( new LikeListner() );
-
-//bot.register( likeTask );
+bot.register( likeTask );
 bot.register( filterTask );
 
-//bot.addTask( likeTask );
+bot.addTask( likeTask );
 bot.addTask( filterTask );
 bot.start();

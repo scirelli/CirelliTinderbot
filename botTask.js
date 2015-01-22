@@ -1,5 +1,6 @@
-var Q  = require('q');
-var sc = require('./IChangeRegistrar.js');
+var Q      = require('q');
+var RegExs = require('./regex.js');
+var sc     = require('./IChangeRegistrar.js');
 require('./extras-math.js');
 require('./date.js');
 
@@ -164,7 +165,7 @@ void function( botTask ){
     }
     botTask.LikeTask.prototype.register = function(oListener){
         if( oListener && oListener.onLike ){
-            botTask.ATask.register.call(this,oListener);
+            botTask.ATask.prototype.register.call(this,oListener);
         }
         return this;
     }
@@ -197,7 +198,7 @@ void function( botTask ){
         //Call parent constructor
         botTask.ATask.call(this, oTinder);
         this.totalCnt = 0;
-        Object.defineProperty(this, "SCAN_LIMIT ", { get: function(){ return 4; } });//Scan the last X messages from a user for spam. 0 means all. If spam not found in X msgs there's no spam.
+        Object.defineProperty(this, "SCAN_LIMIT", { get: function(){ return 4; } });//Scan the last X messages from a user for spam. 0 means all. If spam not found in X msgs there's no spam.
         Object.defineProperty(this, "SCAN_DELAY", { get: function(){ return ~~Math.rndRange(500,1000); } });
     }
     botTask.FilterSpamTask.prototype = new botTask.ATask();
@@ -216,7 +217,7 @@ void function( botTask ){
             console.log(JSON.stringify(data));
             if( data && data.matches && data.matches.length ){
                 me.changePub.change({totalCnt:me.totalCnt+data.matches.length, data:data.matches, oTinder:me.oTinder});
-                me.filterAllMatches( data.matches, 0, data.matches.length, defered );
+                me.filterAllMatches( data.matches, defered );
             }else{
                 me.changePub.change({totalCnt:me.totalCnt, data:[], error:data});
                 defered.reject({ data:data, task:me });
@@ -265,7 +266,7 @@ void function( botTask ){
             return defered.promise;
         }( aMatches, index, sz ).delay(me.SCAN_DELAY).then(
             function resolve0(result){
-                return me.filterAllMatches( result.a, result.index+1, result.sz, parentDefered );
+                return me.filterAllMatches( result.a, parentDefered );
             },
             function reject0(){
                 parentDefered.resolve({task:me});
@@ -279,7 +280,7 @@ void function( botTask ){
 
         aMatches.forEach(function( oMatch, index ){
             var aMessages = oMatch.messages || [],
-                nLimit    = me.SCAN_LIMIT > 0 ? me.SCAN_LIMIT : messages.length;
+                nLimit    = me.SCAN_LIMIT > 0 ? me.SCAN_LIMIT : aMessages.length;
 
             me.totalCnt++;
             
@@ -287,10 +288,9 @@ void function( botTask ){
             aMessages.sort(function(a,b){
                 return Date.compare( new Date(a.sent_date), new Date(b.sent_date) );
             });
-            for( var i=0,l=aMessages.length,oMsg=null; i<l && i<=limit; i++ ){
+            for( var i=0,l=aMessages.length,oMsg=null; i<l && i<=nLimit; i++ ){
                 oMsg = aMessages[i];
                 if( oMsg.to === myId ){//If the message is to me scan it.
-                    debugger;
                     me.isSpam(oMsg.message).then(
                         function itIsSpam(){
                             //report it.
@@ -300,24 +300,28 @@ void function( botTask ){
                                 },
                                 function spamRejected( reason ){;
                                 }
-                            );
+                            ).done();
                         },
                         function notSpam(){
                             //do nothing
                         }
-                    );
-                    break;
+                    ).done();
                 }
             }
         });
         parentDefered.reject( {error:'Sleep.', task:me} );//reject to sleep
     }
-    botTask.FilterSpamTask.isSpam = function( msg ){
+    botTask.FilterSpamTask.prototype.isSpam = function( msg ){
         var defered = Q.defer();
-        defered.reject();
+        if( RegExs.regURLSimple.test(msg) ){
+            //defered.resolve(true);
+        }else{
+            defered.reject(false);
+        }
+        defered.reject(false);//TODO: remove this line.
         return defered.promise;
     }
-    botTask.FilterSpamTask.reportSpam = function( userId ){
+    botTask.FilterSpamTask.prototype.reportSpam = function( userId ){
         var me = this,
             defered = Q.defer();
 
@@ -332,7 +336,7 @@ void function( botTask ){
     }
     botTask.FilterSpamTask.prototype.register = function(oListener){
         if( oListener && oListener.onSpam ){
-            botTask.ATask.register.call(this,oListener);
+            botTask.ATask.prototype.register.call(this,oListener);
         }
         return this;
     }
