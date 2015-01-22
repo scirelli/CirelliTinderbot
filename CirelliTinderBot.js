@@ -71,6 +71,8 @@ function CirelliTinderBot(){
                     defered.reject({authorized:false, error:response.error});
                 }else{
                     sMyTinderId = response.userId;
+                    console.log( 'My tinder userid: ' + sMyTinderId );
+                    console.log(JSON.stringify(response));
                     defered.resolve({authorized:true});
                 }
             });
