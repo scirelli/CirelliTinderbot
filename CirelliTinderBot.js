@@ -57,7 +57,7 @@ function CirelliTinderBot(){
         }
     }
 
-    function authenticate()//{
+    function authenticate(){
         if( isFBTokenExpired() ){
             defAuthorize = authorize();
         }
