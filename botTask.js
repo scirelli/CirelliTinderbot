@@ -214,7 +214,7 @@ void function( botTask ){
         var defered = Q.defer();
         this.setTinder(oTinder);
         this.oTinder.getUpdates(function handleResults(error, data){
-            console.log(JSON.stringify(data));
+            //console.log(JSON.stringify(data));
             if( data && data.matches && data.matches.length ){
                 me.changePub.change({totalCnt:me.totalCnt+data.matches.length, data:data.matches, oTinder:me.oTinder});
                 me.filterAllMatches( data.matches, defered );
