@@ -57,7 +57,7 @@ function CirelliTinderBot(){
         }
     }
 
-    function authenticate(){
+    function authenticate()//{
         if( isFBTokenExpired() ){
             defAuthorize = authorize();
         }
@@ -72,7 +72,7 @@ function CirelliTinderBot(){
                 }else{
                     sMyTinderId = response.userId;
                     console.log( 'My tinder userid: ' + sMyTinderId );
-                    console.log(JSON.stringify(response));
+                    //console.log(JSON.stringify(response));
                     defered.resolve({authorized:true});
                 }
             });

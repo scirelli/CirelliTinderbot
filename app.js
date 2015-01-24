@@ -20,7 +20,12 @@ LikeListner.prototype.onLiked = function(obj){
 };
 LikeListner.prototype.onIdle = function( obj ){
     console.log('Going idle.' );
-    console.log(JSON.stringify(obj));
+    if( obj.reason.data ){
+        console.log(obj.reason.data.message);
+    }else{
+        console.log(obj.reason.error);
+    }
+
 }
 LikeListner.prototype.onResume = function( obj ){
     console.log('Resumed');
