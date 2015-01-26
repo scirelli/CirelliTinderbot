@@ -72,6 +72,13 @@ module.exports = {
             if (n.length >= min) {              // EOF
                 items.push(n);
             }
+            return this;
+        }
+        public.hasNumbers = function(){
+            return this.items.length ? true : false;
+        }
+        public.clear = function(){
+            this.items = [];
         }
     }
 }
