@@ -6,4 +6,5 @@ salt.txt
 /node_modules
 userid.txt
 cookie.txt
+cookie_old.txt
 *.log
