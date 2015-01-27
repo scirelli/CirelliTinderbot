@@ -53,7 +53,7 @@ function CirelliTinderBot(){
                 function authenticateReject(){
                     throw 'Unable to authenticate.';
                 }
-            );
+            ).done();
         }
     }
 
@@ -76,7 +76,7 @@ function CirelliTinderBot(){
                     defered.resolve({authorized:true});
                 }
             });
-        });
+        }).done();
         return defered.promise;
     }
     function getMyTinderId(){
@@ -90,7 +90,7 @@ function CirelliTinderBot(){
             followAllRedirects:false,
             headers:{
                 'User-Agent':'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36',
-                'Cookie':cookie
+                'Cookie':cookie.trim()
             }
         };
 

@@ -1,7 +1,7 @@
 module.exports = {
     //var oRegEx = /^(https?):\/\/(([a-z0-9$_\.\+!\*\'\(\),;\?&=-]|%[0-9a-f]{2})+(:([a-z0-9$_\.\+!\*\'\(\),;\?&=-]|%[0-9a-f]{2})+)?@)?(?#)((([a-z0-9][a-z0-9-]*[a-z0-9]\.)*[a-z][a-z0-9-]*[a-z0-9]|((\d|[1-9]\d|1\d{2}|2[0-4][0-9]|25[0-5])\.){3}(\d|[1-9]\d|1\d{2}|2[0-4][0-9]|25[0-5]))(:\d+)?)(((\/+([a-z0-9$_\.\+!\*\'\(\),;:@&=-]|%[0-9a-f]{2})*)*(\?([a-z0-9$_\.\+!\*\'\(\),;:@&=-]|%[0-9a-f]{2})*)?)?)?(#([a-z0-9$_\.\+!\*\'\(\),;:@&=-]|%[0-9a-f]{2})*)?$/ig;
      /*http://forums.devshed.com/javascript-development-115/regexp-to-match-url-pattern-493764.html */
-    regURL:new RegExp('((https?):\/\/)?' +                 // protocol||
+    regURL:new RegExp('((https?):\/\/)' +                 // protocol||
         '('+
         '([a-z0-9$_\.\+!\*\'\(\),;\?&=-]|%[0-9a-f]{2})+' +         // username
         '(:([a-z0-9$_\.\+!\*\'\(\),;\?&=-]|%[0-9a-f]{2})+)?' +     // password
@@ -31,8 +31,7 @@ module.exports = {
         var minimum = 9;            // typical minimum phone number length
         this.items = [];
 
-        var public = PhoneNumberParser.prototype;
-        public.parse = function(str) {
+        this.parse = function(str) {
             var items = this.items = [];
 
             var i = 0, n = '', min = minimum;
@@ -74,10 +73,10 @@ module.exports = {
             }
             return this;
         }
-        public.hasNumbers = function(){
+        this.hasNumbers = function(){
             return this.items.length ? true : false;
         }
-        public.clear = function(){
+        this.clear = function(){
             this.items = [];
         }
     }

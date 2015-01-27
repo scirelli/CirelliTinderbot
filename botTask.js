@@ -198,9 +198,10 @@ void function( botTask ){
         //Call parent constructor
         botTask.ATask.call(this, oTinder);
         this.totalCnt = 0;
+        this.changePub  = new botTask.FilterSpamTask.ChangePublisher();
         Object.defineProperty(this, "SCAN_LIMIT", { get: function(){ return 4; } });//Scan the first X messages from a user for spam. 0 means all. If spam not found in X msgs there's no spam.
         Object.defineProperty(this, "SCAN_DELAY", { get: function(){ return ~~Math.rndRange(500,1000); } });
-        this.phoneNumberParser = new RegExs.phoneNumberParser();
+        this.phoneNumberParser = new RegExs.PhoneNumberParser();
     }
     botTask.FilterSpamTask.prototype = new botTask.ATask();
     botTask.FilterSpamTask.prototype.setTinder = function( oTinder ){
@@ -313,6 +314,7 @@ void function( botTask ){
     }
     botTask.FilterSpamTask.prototype.isSpam = function( msg ){
         var defered = Q.defer();
+
         if( RegExs.regURL.test(msg) ){
             defered.resolve(true);
         }else if( this.phoneNumberParser.parse(msg).hasNumbers() ){
@@ -321,6 +323,8 @@ void function( botTask ){
         }else{
             defered.reject(false);
         }
+        //Need to rest lastindex bc of g flag.
+        RegExs.regURL.lastindex = 0;
         return defered.promise;
     }
     botTask.FilterSpamTask.prototype.reportSpam = function( userId ){

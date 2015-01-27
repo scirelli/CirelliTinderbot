@@ -21,7 +21,7 @@ LikeListner.prototype.onLiked = function(obj){
 LikeListner.prototype.onIdle = function( obj ){
     console.log('Going idle.' );
     if( obj.reason.data ){
-        console.log(obj.reason.data.message);
+        console.log(obj.reason.data);
     }else{
         console.log(obj.reason.error);
     }
