@@ -164,7 +164,7 @@ void function( botTask ){
         ).done();
     }
     botTask.LikeTask.prototype.register = function(oListener){
-        if( oListener && oListener.onLike ){
+        if( oListener && oListener.onLiked ){
             botTask.ATask.prototype.register.call(this,oListener);
         }
         return this;

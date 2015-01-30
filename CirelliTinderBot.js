@@ -59,6 +59,7 @@ function CirelliTinderBot(){
 
     function authenticate(){
         if( isFBTokenExpired() ){
+            fbTokenExpiresIn = new Date(new Date().getTime() + 10000);//some time in the future. Will be over written by the actual time. 
             defAuthorize = authorize();
         }
         return defAuthorize;
@@ -71,7 +72,7 @@ function CirelliTinderBot(){
                     defered.reject({authorized:false, error:response.error});
                 }else{
                     sMyTinderId = response.userId;
-                    console.log( 'My tinder userid: ' + sMyTinderId );
+                    console.log( 'My tinder userid: ' + sMyTinderId + '\nAuthToken: ' + response.xAuthToken);
                     //console.log(JSON.stringify(response));
                     defered.resolve({authorized:true});
                 }
