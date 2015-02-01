@@ -97,7 +97,7 @@ void function( botTask ){
     botTask.LikeTask = function( oTinder ){
         //Call parent constructor
         botTask.ATask.call(this, oTinder);
-        Object.defineProperty(this, "RECOMMENDATIONS_LIMIT", { get: function(){ return 15; } });
+        Object.defineProperty(this, "RECOMMENDATIONS_LIMIT", { get: function(){ return 25; } });
 
 
         this.changePub  = new botTask.LikeTask.ChangePublisher();

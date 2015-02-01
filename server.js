@@ -149,7 +149,7 @@ BufferedStringFileWriter.prototype.appendBuffer = function(data){
     }
     if( this.interval == 0 ){
         var me = this;
-        this.interval = setTimerout(function(){
+        this.interval = setTimeout(function(){
             me.flushBuffer();
         }, 1000*60*2 );
     }
@@ -167,7 +167,7 @@ BufferedStringFileWriter.prototype.flushBuffer = function(){
     }
 }
 BufferedStringFileWriter.prototype.clearBuffer = function(){
-    this.aMsgBuffer.clear();
+    this.aMsgBuffer = [];
     clearTimeout(this.interval);
     this.interval = 0;
 }
