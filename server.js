@@ -24,16 +24,18 @@ app.get('/start', function( req, res ){
     shasum.update(salt);
     botId = shasum.digest('hex');
     console.log(botId);
-
-    likeTask.register( new LikeListner(botId) );
-    filterTask.register( new SpamListener(botId) );
+    
+    if( req.query.like == 'like' ){
+        likeTask.register( new LikeListner(botId) );
+        bot.addTask( likeTask );
+    }
+    if( req.query.filter == 'spamfilter' ){
+        filterTask.register( new SpamListener(botId) );
+        bot.addTask( filterTask );
+    }
 
     bots[botId] = bot;
-    bot.register( likeTask );
-    bot.register( filterTask );
-    bot.addTask( likeTask );
-    bot.addTask( filterTask );
-    bot.start();
+    bot.start( req.query.cookie );
 
     body.botId = botId;
     res.setHeader('Content-Type', 'application/json');
@@ -69,7 +71,7 @@ function getSalt(fileName){
     return '';
 }
 function LikeListner( sBotId ){
-    var MAX_BUFFER_SIZE  = 50;
+    var MAX_BUFFER_SIZE  = 5;
     this.sBotId         = sBotId;
     this.oBufferedWriter = new BufferedStringFileWriter( __dirname + '/bots/' + sBotId + '_like.log', this.MAX_BUFFER_SIZE );
 };
@@ -96,7 +98,7 @@ LikeListner.prototype.onLiked = function(obj){
     }
 };
 LikeListner.prototype.onIdle = function( obj ){
-    console.log('Going idle.' );
+    console.log('Liker going idle.' );
     if( obj.reason.data ){
         console.log(obj.reason.data);
     }else{
@@ -105,12 +107,12 @@ LikeListner.prototype.onIdle = function( obj ){
 
 }
 LikeListner.prototype.onResume = function( obj ){
-    console.log('Resumed');
+    console.log('Liker resumed');
     console.log(JSON.stringify(obj));
 }
 
 function SpamListener( sBotId ){
-    var MAX_BUFFER_SIZE  = 50;
+    var MAX_BUFFER_SIZE  = 5;
     this.sBotId         = sBotId;
     this.oBufferedWriter = new BufferedStringFileWriter( __dirname + '/bots/' + sBotId + '_spam.log', this.MAX_BUFFER_SIZE );
 };
@@ -120,28 +122,52 @@ SpamListener.prototype.onSpam = function( obj ){
     console.log(JSON.stringify(obj));
     this.oBufferedWriter.appendBuffer( JSON.stringify(obj) + '\n' );
 }
+SpamListener.prototype.onIdle = function( obj ){
+    console.log('Spam Filter going idle.' );
+    if( obj.reason.data ){
+        console.log(obj.reason.data);
+    }else{
+        console.log(obj.reason.error);
+    }
+
+}
+SpamListener.prototype.onResume = function( obj ){
+    console.log('Spam Filter resumed');
+    console.log(JSON.stringify(obj));
+}
 
 function BufferedStringFileWriter ( sFilename, nMaxBufferSize ){
     this.nMaxBufferSize = parseInt(nMaxBufferSize) || 50;
     this.aMsgBuffer     = [];
     this.sFilename      = sFilename;
+    this.interval       = 0;
 }
 BufferedStringFileWriter.prototype.appendBuffer = function(data){
     this.aMsgBuffer.push(data);
-    if( aMsgBuffer > this.MAX_BUFFER_SIZE ){
+    if( this.aMsgBuffer.length > this.MAX_BUFFER_SIZE ){
         this.flushBuffer();
+    }
+    if( this.interval == 0 ){
+        var me = this;
+        this.interval = setTimerout(function(){
+            me.flushBuffer();
+        }, 1000*60*2 );
     }
 }
 BufferedStringFileWriter.prototype.flushBuffer = function(){
     var me = this;
-    fs.appendFile( this.sFilename, this.aMsgBuffer.join(''), function(err){
-        if( !err ){
-            me.clearBuffer();
-        }else{
-            console.error(err);
-        }
-    });
+    if( this.aMsgBuffer.length ){
+        fs.appendFile( this.sFilename, this.aMsgBuffer.join(''), function(err){
+            if( !err ){
+                me.clearBuffer();
+            }else{
+                console.error(err);
+            }
+        });
+    }
 }
 BufferedStringFileWriter.prototype.clearBuffer = function(){
     this.aMsgBuffer.clear();
+    clearTimeout(this.interval);
+    this.interval = 0;
 }

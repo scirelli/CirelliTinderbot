@@ -79,7 +79,7 @@ void function( botTask ){
         return this._achange('onResume', obj, oDoNotNotifyThisListener);
     }
     botTask.ATask.ChangePublisher.prototype.register = function(obj){
-        if( obj.onLiked && obj.onIdle && obj.onResume ){
+        if( obj.onIdle && obj.onResume ){
             return sc.AChangePublisher.prototype.register.call(this, obj);
         }
         return false;
@@ -342,7 +342,7 @@ void function( botTask ){
     }
     botTask.FilterSpamTask.prototype.register = function(oListener){
         if( oListener && oListener.onSpam ){
-            botTask.ATask.prototype.register.call(this,oListener);
+            botTask.ATask.prototype.register.call( this, oListener );
         }
         return this;
     }

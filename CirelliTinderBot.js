@@ -8,8 +8,8 @@ require('./extras-math.js');
 
 function CirelliTinderBot(){
 "use strict";
-    var NO_RESULTS_DELAY      = 15*60*1000;                                //15mins
-
+    var NO_RESULTS_DELAY = 15*60*1000;                                //15mins
+    var AUTH_DELAY       = 1000*60*5;                                 //5mins
     var tin              = new tinder.TinderClient();
     var userId           = '';                                             //Get it here http://findmyfacebookid.com/
     var cookie           = '';                                             //FB cookie: Open your favorite browser and JS debugger and do a window.document.cookie
@@ -42,9 +42,9 @@ function CirelliTinderBot(){
                             runTask(t,tin);
                         },
                         function taskReject( reason ){
-                            changePub.idle( {reason:reason, idleTime:NO_RESULTS_DELAY} );
+                            t.idle( {reason:reason, idleTime:NO_RESULTS_DELAY} );
                             Q.delay(NO_RESULTS_DELAY).then(function(){
-                                changePub.resume( reason );
+                                t.resume( reason );
                                 runTask(t,tin);
                             });
                         }
@@ -59,7 +59,7 @@ function CirelliTinderBot(){
 
     function authenticate(){
         if( isFBTokenExpired() ){
-            fbTokenExpiresIn = new Date(new Date().getTime() + 10000);//some time in the future. Will be over written by the actual time. 
+            fbTokenExpiresIn = new Date(new Date().getTime() + AUTH_DELAY);//some time in the future. Will be over written by the actual time. 
             defAuthorize = authorize();
         }
         return defAuthorize;
@@ -179,6 +179,7 @@ function CirelliTinderBot(){
         return this;
     };
     this.stop = function(){
+        console.log('Stopping bot.');
         bRun = false;
     };
 }
