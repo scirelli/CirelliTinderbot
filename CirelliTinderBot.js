@@ -174,8 +174,12 @@ function CirelliTinderBot(){
     this.start = function( fbCookie, usrId ){
         this.setFBCookie( fbCookie || CirelliTinderBot.getFBCookieFromFile());
         this.setUserId( usrId || CirelliTinderBot.getUserIdFromCookie(cookie) );
+        bRun = true;
         run();
         return this;
+    };
+    this.stop = function(){
+        bRun = false;
     };
 }
 

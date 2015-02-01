@@ -18,27 +18,33 @@ app.get('/start', function( req, res ){
         filterTask = new task.FilterSpamTask();
     var shasum     = crypto.createHash('sha1');
     var body       = {};
+    var botId      = '';
 
     shasum.update(req.query.cookie);
     shasum.update(salt);
-    var d = shasum.digest('hex');
-    console.log(d);
-    bots[d] = bot;
-    body.botId = d;
+    botId = shasum.digest('hex');
+    console.log(botId);
 
-    //spamfilter
-    //like
-    body = JSON.stringify(req.query);
+    likeTask.register( new LikeListner(botId) );
+    filterTask.register( new SpamListener(botId) );
+
+    bots[botId] = bot;
+    bot.register( likeTask );
+    bot.register( filterTask );
+    bot.addTask( likeTask );
+    bot.addTask( filterTask );
+    bot.start();
+
+    body.botId = botId;
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Content-Length', body.length);
-    res.end(body);
-    //or
-    //res.send(body);
+    res.end( JSON.stringify(body) );
 });
 
 app.get('/stop/:id', function( req, res ){
     'use strict';
     if( bots[req.params.id] ){
+        bots[req.params.id].stop();
         var body = JSON.stringify(req.params.id);
     }
     res.setHeader('Content-Type', 'application/json');
@@ -61,4 +67,81 @@ function getSalt(fileName){
         return fs.readFileSync(fileName, 'utf-8');
     }catch(e){}
     return '';
+}
+function LikeListner( sBotId ){
+    var MAX_BUFFER_SIZE  = 50;
+    this.sBotId         = sBotId;
+    this.oBufferedWriter = new BufferedStringFileWriter( __dirname + '/bots/' + sBotId + '_like.log', this.MAX_BUFFER_SIZE );
+};
+LikeListner.prototype = new task.LikeTask.Listener();
+LikeListner.prototype.onLiked = function(obj){
+    var data = '';
+    var me   = this;
+
+    console.log('******** ' + obj.totalCnt + ' **********\n' + obj.match.name + '\n\t' + obj.match._id + '\n\t' + obj.match.distance_mi + ' miles away.\n********************\n\n\n');
+
+    data += obj.totalCnt + ': ' + obj.match.name + '(' + obj.match._id + ') ' + obj.match.distance_mi + ' miles away.\n';
+    //oData.recommendation = obj;
+    this.oBufferedWriter.appendBuffer(data);
+
+    if( obj && obj.data && obj.data.match ){
+        console.log( 'Sending msg to: ' + obj.match._id + "\nMsg: Hi " + obj.match.name + "! How are you?");
+        obj.oTinder.sendMessage( obj.match._id, "Hi " + obj.match.name + "! How are you?", function(error, data){
+            if( !error ){
+                var data = 'Msg sent to ' + obj.match.name + '(' + obj.match._id + ')\n';
+                console.log( 'Msg sent' + JSON.stringify(data) );
+                me.oBufferedWriter.appendBuffer(data);
+            }
+        });
+    }
+};
+LikeListner.prototype.onIdle = function( obj ){
+    console.log('Going idle.' );
+    if( obj.reason.data ){
+        console.log(obj.reason.data);
+    }else{
+        console.log(obj.reason.error);
+    }
+
+}
+LikeListner.prototype.onResume = function( obj ){
+    console.log('Resumed');
+    console.log(JSON.stringify(obj));
+}
+
+function SpamListener( sBotId ){
+    var MAX_BUFFER_SIZE  = 50;
+    this.sBotId         = sBotId;
+    this.oBufferedWriter = new BufferedStringFileWriter( __dirname + '/bots/' + sBotId + '_spam.log', this.MAX_BUFFER_SIZE );
+};
+SpamListener.prototype = new task.FilterSpamTask.Listener();
+SpamListener.prototype.onSpam = function( obj ){
+    console.log('Spam found:');
+    console.log(JSON.stringify(obj));
+    this.oBufferedWriter.appendBuffer( JSON.stringify(obj) + '\n' );
+}
+
+function BufferedStringFileWriter ( sFilename, nMaxBufferSize ){
+    this.nMaxBufferSize = parseInt(nMaxBufferSize) || 50;
+    this.aMsgBuffer     = [];
+    this.sFilename      = sFilename;
+}
+BufferedStringFileWriter.prototype.appendBuffer = function(data){
+    this.aMsgBuffer.push(data);
+    if( aMsgBuffer > this.MAX_BUFFER_SIZE ){
+        this.flushBuffer();
+    }
+}
+BufferedStringFileWriter.prototype.flushBuffer = function(){
+    var me = this;
+    fs.appendFile( this.sFilename, this.aMsgBuffer.join(''), function(err){
+        if( !err ){
+            me.clearBuffer();
+        }else{
+            console.error(err);
+        }
+    });
+}
+BufferedStringFileWriter.prototype.clearBuffer = function(){
+    this.aMsgBuffer.clear();
 }
