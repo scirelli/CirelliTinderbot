@@ -38,18 +38,30 @@ app.get('/start', function( req, res ){
     bot.start( req.query.cookie );
 
     body.botId = botId;
+    body = JSON.stringify(body);
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Content-Length', body.length);
-    res.end( JSON.stringify(body) );
+    res.end( body );
 });
 
 app.get('/stop/:id', function( req, res ){
-    'use strict';
+'use strict';
+    var body = { botId:'' };
     if( bots[req.params.id] ){
         bots[req.params.id].stop();
-        var body = JSON.stringify(req.params.id);
+        delete bots[req.params.id];
+        body.botId = req.params.id;
     }
+    body = JSON.stringify(body);
     res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Length', body.length);
+    res.end(body);
+});
+
+app.get('/shit', function( req, res ){
+'use strict';
+    var body = 'Shit';
+    res.setHeader('Content-Type', 'text/html');
     res.setHeader('Content-Length', body.length);
     res.end(body);
 });
