@@ -97,16 +97,16 @@ LikeListner.prototype.onLiked = function(obj){
     data += obj.totalCnt + ': ' + obj.match.name + '(' + obj.match._id + ') ' + obj.match.distance_mi + ' miles away. ';
 
     if( obj.match.photos && obj.match.photos.length ){
-        var img = '<a href="%s">Image</a>';
+        var img = '<a href="%s">Image_%n</a>';
         var cnt = 0;
         obj.match.photos.forEach(function(e,i){
             if( e.url ){
-                data += img.replace('%s',e.url) + cnt++;
+                data += img.replace('%s',e.url).replace('%n', cnt++);
             }
             if( e.processedFiles && e.processedFiles.length ){
                 e.processedFiles.forEach(function(e,i){
                     if(e.url){
-                        data += img.replace('%s',e.url) + cnt++;
+                        data += img.replace('%s',e.url).replace('%n', cnt++);
                     }
                 });
             }
