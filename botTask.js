@@ -67,6 +67,14 @@ void function( botTask ){
         this.changePub.idle(obj);
         return this;
     }
+    botTask.ATask.prototype.resume = function(obj){
+        this.changePub.resume(obj);
+        return this;
+    }
+    botTask.ATask.prototype.onResume = function(obj){
+        this.resume(obj);
+        return this;
+    }
 
     botTask.ATask.ChangePublisher = function(){
         sc.AChangePublisherWithDNN.call(this);

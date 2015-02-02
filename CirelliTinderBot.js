@@ -8,7 +8,7 @@ require('./extras-math.js');
 
 function CirelliTinderBot(){
 "use strict";
-    var NO_RESULTS_DELAY = 15*60*1000;                                //15mins
+var NO_RESULTS_DELAY     = 15*60*1000;                                //15mins
     var AUTH_DELAY       = 1000*60*5;                                 //5mins
     var tin              = new tinder.TinderClient();
     var userId           = '';                                             //Get it here http://findmyfacebookid.com/
