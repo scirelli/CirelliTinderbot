@@ -96,10 +96,10 @@ LikeListner.prototype.onLiked = function(obj){
 
     data += obj.totalCnt + ': ' + obj.match.name + '(' + obj.match._id + ') ' + obj.match.distance_mi + ' miles away. ';
 
-    if( obj.photos && obj.photos.length ){
+    if( obj.match.photos && obj.match.photos.length ){
         var img = '<a href="%s">Image</a>';
         var cnt = 0;
-        obj.photos.forEach(function(e,i){
+        obj.match.photos.forEach(function(e,i){
             if( e.url ){
                 data += img.replace('%s',e.url) + cnt++;
             }
