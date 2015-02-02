@@ -94,7 +94,26 @@ LikeListner.prototype.onLiked = function(obj){
 
     console.log('******** ' + obj.totalCnt + ' **********\n' + obj.match.name + '\n\t' + obj.match._id + '\n\t' + obj.match.distance_mi + ' miles away.\n********************\n\n\n');
 
-    data += obj.totalCnt + ': ' + obj.match.name + '(' + obj.match._id + ') ' + obj.match.distance_mi + ' miles away.\n';
+    data += obj.totalCnt + ': ' + obj.match.name + '(' + obj.match._id + ') ' + obj.match.distance_mi + ' miles away. ';
+
+    if( obj.photos && obj.photos.length ){
+        var img = '<a href="%s">Image</a>';
+        var cnt = 0;
+        obj.photos.forEach(function(e,i){
+            if( e.url ){
+                data += img.replace('%s',e.url) + cnt++;
+            }
+            if( e.processedFiles && e.processedFiles.length ){
+                e.processedFiles.forEach(function(e,i){
+                    if(e.url){
+                        data += img.replace('%s',e.url) + cnt++;
+                    }
+                });
+            }
+        });
+    }
+    data += '\n';
+
     //oData.recommendation = obj;
     this.oBufferedWriter.appendBuffer(data);
 
