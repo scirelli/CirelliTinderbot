@@ -94,36 +94,39 @@ LikeListner.prototype.onLiked = function(obj){
 
     console.log('******** ' + obj.totalCnt + ' **********\n' + obj.match.name + '\n\t' + obj.match._id + '\n\t' + obj.match.distance_mi + ' miles away.\n********************\n\n\n');
 
-    data += obj.totalCnt + ': ' + obj.match.name + '(' + obj.match._id + ') ' + obj.match.distance_mi + ' miles away. ';
+    //data += obj.totalCnt + ': ' + obj.match.name + '(' + obj.match._id + ') ' + obj.match.distance_mi + ' miles away. ';
+    data = { name:obj.match.name , mId:obj.match._id, d:obj.match.distance_mi, imgs:[] };
 
     if( obj.match.photos && obj.match.photos.length ){
         var img = '<a href="%s">Image_%n</a>';
         var cnt = 0;
         obj.match.photos.forEach(function(e,i){
             if( e.url ){
-                data += img.replace('%s',e.url).replace('%n', cnt++);
+                //data += img.replace('%s',e.url).replace('%n', cnt++);
+                data.imgs.push(e.url);
             }
             if( e.processedFiles && e.processedFiles.length ){
                 e.processedFiles.forEach(function(e,i){
                     if(e.url){
-                        data += img.replace('%s',e.url).replace('%n', cnt++);
+                        //data += img.replace('%s',e.url).replace('%n', cnt++);
+                        data.imgs.push( e.url );
                     }
                 });
             }
         });
     }
-    data += '\n';
+    //data += '\n';
 
     //oData.recommendation = obj;
-    this.oBufferedWriter.appendBuffer(data);
+    this.oBufferedWriter.appendBuffer(JSON.stringify(data) + ',');
 
     if( obj && obj.data && obj.data.match ){
         console.log( 'Sending msg to: ' + obj.match._id + "\nMsg: Hi " + obj.match.name + "! How are you?");
         obj.oTinder.sendMessage( obj.match._id, "Hi " + obj.match.name + "! How are you?", function(error, data){
             if( !error ){
-                var data = 'Msg sent to ' + obj.match.name + '(' + obj.match._id + ')\n';
+                var data = { mTo:obj.match.name, mId:obj.match._id};
                 console.log( 'Msg sent' + JSON.stringify(data) );
-                me.oBufferedWriter.appendBuffer(data);
+                me.oBufferedWriter.appendBuffer(JSON.stringify(data)+',');
             }
         });
     }
