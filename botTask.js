@@ -155,7 +155,11 @@ void function( botTask ){
                         debugger;
                         defered.reject({error:error, data:data, a:a, index:index, sz:sz});
                     }else{
-                        me.likesRemaining = data.likes_remaining;
+                        if( data && data.likesRemaining ){
+                            me.likesRemaining = data.likes_remaining;
+                        }else{
+                            me.likesRemaining = 0;
+                        }
                         me.changePub.liked({totalCnt:me.totalCnt, match:e, data:data, oTinder:me.oTinder});
                         defered.resolve({error:error, data:data, a:a, index:index, sz:sz});
                     }
