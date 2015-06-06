@@ -8,3 +8,4 @@ userid.txt
 cookie.txt
 cookie_old.txt
 *.log
+/bots
