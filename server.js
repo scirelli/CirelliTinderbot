@@ -95,7 +95,7 @@ LikeListner.prototype.onLiked = function(obj){
     console.log('******** ' + obj.totalCnt + ' **********\n' + obj.match.name + '\n\t' + obj.match._id + '\n\t' + obj.match.distance_mi + ' miles away.\n********************\n\n\n');
 
     //data += obj.totalCnt + ': ' + obj.match.name + '(' + obj.match._id + ') ' + obj.match.distance_mi + ' miles away. ';
-    data = { name:obj.match.name , mId:obj.match._id, d:obj.match.distance_mi, imgs:[] };
+    data = { name:obj.match.name, mId:obj.match._id, d:obj.match.distance_mi, imgs:[] };
 
     if( obj.match.photos && obj.match.photos.length ){
         var img = '<a href="%s">Image_%n</a>';

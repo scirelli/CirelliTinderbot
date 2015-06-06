@@ -144,12 +144,14 @@ void function( botTask ){
         var me = this;
         void function loop( a, index, sz ){
             var defered = Q.defer();
+            var e       = a[index];
+
             if( index >= sz ){
                 defered.reject({error:'Done', a:a, index:index, sz:sz});
+            }else if( e && e.name && e.name.toUpperCase().localeCompare('TINDER TEAM') == 0 ){
+                defered.reject({error:'Tinder rate limit exceded for the day', a:a, index:index, sz:sz});
             }else{
-                var e = a[index];
                 me.totalCnt++;
-
                 me.oTinder.like(e._id,function(error, data){
                     if( error ){
                         debugger;
