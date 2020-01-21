@@ -11,7 +11,7 @@
     "author": "scirelli",
     "license": "MIT",
     "dependencies": {
-        "request" : "2.51.x",
+        "request" : "2.88.x",
         "q":"1.x.x",
         "express": "~3.0.0",
         "crypto":"0.10.x"
